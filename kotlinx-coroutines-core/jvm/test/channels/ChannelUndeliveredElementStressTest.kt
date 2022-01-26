@@ -25,6 +25,7 @@ class ChannelUndeliveredElementStressTest(private val kind: TestChannelKind) : T
         @JvmStatic
         fun params(): Collection<Array<Any>> =
             TestChannelKind.values()
+                .filter { it === TestChannelKind.UNLIMITED }
                 .filter { !it.viaBroadcast }
                 .map { arrayOf<Any>(it) }
     }
@@ -32,7 +33,7 @@ class ChannelUndeliveredElementStressTest(private val kind: TestChannelKind) : T
     private val iterationDurationMs = 100L
     private val testIterations = 20 * stressTestMultiplier // 2 sec
 
-    private val dispatcher = newFixedThreadPoolContext(2, "ChannelAtomicCancelStressTest")
+    private val dispatcher = newFixedThreadPoolContext(2, "ChannelUndeliveredElementStressTest")
     private val scope = CoroutineScope(dispatcher)
 
     private val channel = kind.create<Data> { it.failedToDeliver() }
@@ -172,7 +173,7 @@ class ChannelUndeliveredElementStressTest(private val kind: TestChannelKind) : T
                     sentStatus[trySendData.x] = sendMode + 2
                     when {
                         // must artificially slow down LINKED_LIST sender to avoid overwhelming receiver and going OOM
-                        kind == TestChannelKind.UNLIMITED -> while (sentCnt > lastReceived + 100) yield()
+                        kind == TestChannelKind.UNLIMITED -> while (sentCnt > lastReceived + 20) yield()
                         // yield periodically to check cancellation on conflated channels
                         kind.isConflated -> if (counter++ % 100 == 0) yield()
                     }
