@@ -1126,6 +1126,7 @@ internal open class BufferedChannel<E>(
             segm = segm.next ?: break
         }
         while (true) {
+            val segmPrev = segm.prev
             for (i in SEGMENT_SIZE - 1 downTo 0) {
                 if (segm.id * SEGMENT_SIZE + i < receivers.value) return
                 while (true) {
@@ -1158,7 +1159,7 @@ internal open class BufferedChannel<E>(
                     }
                 }
             }
-            segm = segm.prev ?: break
+            segm = segmPrev ?: break
         }
         undeliveredElementException?.let { throw it } // throw UndeliveredElementException at the end if there was one
     }

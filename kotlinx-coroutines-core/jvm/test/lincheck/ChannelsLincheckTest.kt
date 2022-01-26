@@ -30,7 +30,8 @@ class Buffered1ChannelLincheckTest : ChannelLincheckTestBase(
 )
 class Buffered1BroadcastChannelLincheckTest : ChannelLincheckTestBase(
     c = ChannelViaBroadcast(BufferedBroadcastChannel(1)),
-    sequentialSpecification = SequentialBuffered1Channel::class.java
+    sequentialSpecification = SequentialBuffered1Channel::class.java,
+    obstructionFree = false
 )
 class SequentialBuffered1Channel : SequentialIntChannelBase(1)
 
@@ -40,7 +41,8 @@ class Buffered2ChannelLincheckTest : ChannelLincheckTestBase(
 )
 class Buffered2BroadcastChannelLincheckTest : ChannelLincheckTestBase(
     c = ChannelViaBroadcast(BufferedBroadcastChannel(2)),
-    sequentialSpecification = SequentialBuffered2Channel::class.java
+    sequentialSpecification = SequentialBuffered2Channel::class.java,
+    obstructionFree = false
 )
 class SequentialBuffered2Channel : SequentialIntChannelBase(2)
 
@@ -52,11 +54,13 @@ class SequentialUnlimitedChannel : SequentialIntChannelBase(UNLIMITED)
 
 class ConflatedChannelLincheckTest : ChannelLincheckTestBase(
     c = Channel(CONFLATED),
-    sequentialSpecification = SequentialConflatedChannel::class.java
+    sequentialSpecification = SequentialConflatedChannel::class.java,
+    obstructionFree = false
 )
 class ConflatedBroadcastChannelLincheckTest : ChannelLincheckTestBase(
     c = ChannelViaBroadcast(ConflatedBroadcastChannel()),
-    sequentialSpecification = SequentialConflatedChannel::class.java
+    sequentialSpecification = SequentialConflatedChannel::class.java,
+    obstructionFree = false
 )
 class SequentialConflatedChannel : SequentialIntChannelBase(CONFLATED)
 
@@ -66,7 +70,8 @@ class SequentialConflatedChannel : SequentialIntChannelBase(CONFLATED)
 )
 abstract class ChannelLincheckTestBase(
     private val c: Channel<Int>,
-    private val sequentialSpecification: Class<*>
+    private val sequentialSpecification: Class<*>,
+    private val obstructionFree: Boolean = true
 ) : AbstractLincheckTest() {
 
     @Operation(allowExtraSuspension = true)
@@ -136,8 +141,12 @@ abstract class ChannelLincheckTestBase(
     @StateRepresentation
     fun state() = c.toString()
 
-    override fun <O : Options<O, *>> O.customize(isStressTest: Boolean): O =
+    override fun <O : Options<O, *>> O.customize(isStressTest: Boolean) =
         actorsBefore(0).sequentialSpecification(sequentialSpecification)
+
+    override fun ModelCheckingOptions.customize(isStressTest: Boolean) =
+        checkObstructionFreedom(obstructionFree)
+       .invocationsPerIteration(if (isStressTest) 20_000 else 1_000)
 }
 
 private class NumberedCancellationException(number: Int) : CancellationException() {
