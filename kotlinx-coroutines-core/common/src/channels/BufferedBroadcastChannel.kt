@@ -193,6 +193,7 @@ internal open class BufferedBroadcastChannel<E>(
     private inner class SubscriberConflated
         : ConflatedBufferedChannel<E>(capacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST), Subscriber<E>
     {
+        override fun shouldSendSuspend(): Boolean = false
         override fun tryReceive(): ChannelResult<E> {
             lock.lock()
             return super.tryReceive()

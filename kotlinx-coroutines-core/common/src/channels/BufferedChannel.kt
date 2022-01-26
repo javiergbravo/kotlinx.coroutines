@@ -208,7 +208,7 @@ internal open class BufferedChannel<E>(
      * Checks whether a [send] invocation is bound to suspend if it is called
      * with the current counter and closing status values. See [shouldSendSuspend].
      */
-    internal fun shouldSendSuspend(): Boolean = shouldSendSuspend(sendersAndCloseStatus.value)
+    internal open fun shouldSendSuspend(): Boolean = shouldSendSuspend(sendersAndCloseStatus.value)
 
 
     /**
