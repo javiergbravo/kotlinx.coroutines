@@ -96,7 +96,7 @@ public fun <E> BroadcastChannel(capacity: Int): BroadcastChannel<E> =
  */
 @ObsoleteCoroutinesApi
 internal class ConflatedBroadcastChannel<E>() :
-    BufferedBroadcastChannel<E>(capacity = Channel.CONFLATED),
+    BufferedBroadcastChannel<E>(capacity = CONFLATED),
     BroadcastChannel<E>
 {
     /**

@@ -96,7 +96,11 @@ internal open class ConflatedBufferedChannel<E>(
 
     override fun trySend(element: E): ChannelResult<Unit> = lock.withLock {
         while (true) {
-            if (!shouldSendSuspend()) return super.trySend(element)
+            if (!shouldSendSuspend()) {
+                val trySendResult = super.trySend(element)
+                if (trySendResult.isFailure) continue
+                return@withLock trySendResult
+            }
             if (onBufferOverflow === DROP_LATEST) {
                 onUndeliveredElement?.invoke(element)
             } else { // DROP_OLDEST
