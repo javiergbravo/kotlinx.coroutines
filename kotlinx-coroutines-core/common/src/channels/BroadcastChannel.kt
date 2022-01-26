@@ -206,8 +206,10 @@ internal open class BufferedBroadcastChannel<E>(
 
     override fun trySend(element: E): ChannelResult<Unit> = lock.withLock {
         if (isClosedForSend) return super.trySend(element)
-        val success = subscribers.none { it.shouldSendSuspend() }
-        if (!success) return ChannelResult.failure()
+        val success = capacity == CONFLATED || subscribers.none { it.shouldSendSuspend() }
+        if (!success) {
+            return ChannelResult.failure()
+        }
         subscribers.forEach { it.trySend(element) }
         if (capacity == CONFLATED)
             lastConflatedElement = element
