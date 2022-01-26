@@ -98,8 +98,8 @@ internal open class ConflatedBufferedChannel<E>(
         while (true) {
             if (!shouldSendSuspend()) {
                 val trySendResult = super.trySend(element)
-                if (trySendResult.isFailure) continue
-                return@withLock trySendResult
+                if (trySendResult.isClosed || trySendResult.isSuccess) return trySendResult
+                continue
             }
             if (onBufferOverflow === DROP_LATEST) {
                 onUndeliveredElement?.invoke(element)
