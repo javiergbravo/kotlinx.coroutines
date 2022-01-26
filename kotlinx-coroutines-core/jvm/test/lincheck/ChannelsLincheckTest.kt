@@ -15,8 +15,8 @@ import org.jetbrains.kotlinx.lincheck.*
 import org.jetbrains.kotlinx.lincheck.annotations.*
 import org.jetbrains.kotlinx.lincheck.annotations.Operation
 import org.jetbrains.kotlinx.lincheck.paramgen.*
+import org.jetbrains.kotlinx.lincheck.strategy.managed.modelchecking.*
 import org.jetbrains.kotlinx.lincheck.verifier.*
-import org.junit.*
 
 class RendezvousChannelLincheckTest : ChannelLincheckTestBase(
     c = Channel(RENDEZVOUS),
@@ -28,7 +28,6 @@ class Buffered1ChannelLincheckTest : ChannelLincheckTestBase(
     c = Channel(1),
     sequentialSpecification = SequentialBuffered1Channel::class.java
 )
-@Ignore
 class Buffered1BroadcastChannelLincheckTest : ChannelLincheckTestBase(
     c = ChannelViaBroadcast(BufferedBroadcastChannel(1)),
     sequentialSpecification = SequentialBuffered1Channel::class.java
@@ -39,7 +38,6 @@ class Buffered2ChannelLincheckTest : ChannelLincheckTestBase(
     c = Channel(2),
     sequentialSpecification = SequentialBuffered2Channel::class.java
 )
-@Ignore
 class Buffered2BroadcastChannelLincheckTest : ChannelLincheckTestBase(
     c = ChannelViaBroadcast(BufferedBroadcastChannel(2)),
     sequentialSpecification = SequentialBuffered2Channel::class.java
@@ -56,7 +54,6 @@ class ConflatedChannelLincheckTest : ChannelLincheckTestBase(
     c = Channel(CONFLATED),
     sequentialSpecification = SequentialConflatedChannel::class.java
 )
-@Ignore
 class ConflatedBroadcastChannelLincheckTest : ChannelLincheckTestBase(
     c = ChannelViaBroadcast(ConflatedBroadcastChannel()),
     sequentialSpecification = SequentialConflatedChannel::class.java
@@ -88,7 +85,7 @@ abstract class ChannelLincheckTestBase(
             else false
         }
 
-    @Operation(allowExtraSuspension = true)
+//    @Operation(allowExtraSuspension = true)
     suspend fun sendViaSelect(@Param(name = "value") value: Int): Any = try {
         select<Unit> { c.onSend(value) {} }
     } catch (e: NumberedCancellationException) {

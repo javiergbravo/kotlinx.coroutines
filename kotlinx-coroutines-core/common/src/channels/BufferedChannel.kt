@@ -107,15 +107,15 @@ internal open class BufferedChannel<E>(
         return closed(sendException(getCause()))
     }
 
-    private class SenderBroadcast(val cont: CancellableContinuation<Unit>) : Waiter
+    private class SenderBroadcast(val cont: CancellableContinuation<Boolean>) : Waiter
 
-    internal suspend fun sendBroadcast(element: E): Unit = suspendCancellableCoroutineReusable { cont ->
+    internal open suspend fun sendBroadcast(element: E): Boolean = suspendCancellableCoroutineReusable { cont ->
         sendImpl(
             element = element,
             waiter = SenderBroadcast(cont),
-            onRendezvousOrBuffered = { cont.resume(Unit) },
+            onRendezvousOrBuffered = { cont.resume(true) },
             onSuspend = { segm, i -> cont.prepareSenderForSuspension(segm, i) },
-            onClosed = { cont.resume(Unit) }
+            onClosed = { cont.resume(false) }
         )
     }
 
@@ -171,7 +171,7 @@ internal open class BufferedChannel<E>(
             onClosed = { onClosedSendOnNoWaiterSuspend(element, cont) },
         )
     }
-    private fun CancellableContinuation<Unit>.prepareSenderForSuspension(
+    private fun CancellableContinuation<*>.prepareSenderForSuspension(
         // The working cell is specified via
         // segment and index in it.
         segment: ChannelSegment<E>,
@@ -810,7 +810,7 @@ internal open class BufferedChannel<E>(
             }
         }
         this is SenderBroadcast -> {
-            cont.tryResume(Unit).let {
+            cont.tryResume(true).let {
                 if (it !== null) {
                     cont.completeResume(it)
                     true
@@ -856,7 +856,7 @@ internal open class BufferedChannel<E>(
             val state = segm.getState(i)
             when {
                 state === null -> {
-                    if (segm.casState(i, segm, BUFFERING)) return true
+                    if (segm.casState(i, state, BUFFERING)) return true
                 }
                 state === CELL_BUFFERED || state === CELL_BUFFERED2 || state === BROKEN || state === DONE || state === DONE_R || state === CHANNEL_CLOSED -> return true
                 state === RESUMING_R -> if (segm.casState(i, state, RESUMING_R_EB)) return true
@@ -950,7 +950,7 @@ internal open class BufferedChannel<E>(
 
     protected open fun onReceiveSynchronizationCompletion() {}
 
-    private fun processResultSelectSend(ignoredParam: Any?, selectResult: Any?): Any? =
+    internal fun processResultSelectSend(ignoredParam: Any?, selectResult: Any?): Any? =
         if (selectResult === CHANNEL_CLOSED) throw sendException(getCause())
         else this
 
@@ -1201,7 +1201,7 @@ internal open class BufferedChannel<E>(
         val cause = getCause()
         return when (this) {
             is SenderBroadcast -> {
-                this.cont.resume(Unit)
+                this.cont.resume(false)
                 true
             }
             is CancellableContinuation<*> -> {
@@ -1395,7 +1395,7 @@ internal open class BufferedChannel<E>(
      * Therefore, this function tries to fairly find the first element,
      * updating the `receivers` counter correspondingly.
      */
-    private fun hasElements(): Boolean {
+    internal fun hasElements(): Boolean {
         // Read the segment before accessing `receivers` counter.
         var segm = receiveSegment.value
         while (true) {

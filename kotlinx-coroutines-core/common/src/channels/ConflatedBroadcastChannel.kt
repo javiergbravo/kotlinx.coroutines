@@ -42,4 +42,11 @@ internal class ConflatedBroadcastChannel<E>() :
     public constructor(value: E) : this() {
         trySend(value)
     }
+
+    override fun registerSelectForSend(select: SelectInstance<*>, element: Any?) {
+        trySend(element as E)
+            .onClosed { select.selectInRegistrationPhase(CHANNEL_CLOSED) }
+            .onSuccess { select.selectInRegistrationPhase(Unit) }
+            .onFailure { error("unexpected") }
+    }
 }

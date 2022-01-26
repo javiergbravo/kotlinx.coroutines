@@ -91,7 +91,14 @@ internal open class BufferedBroadcastChannel<E>(
                 lastConflatedElement = element
             ArrayList(subscribers)
         }
-        subs.forEach { it.sendBroadcast(element) }
+        subs.forEach {
+            val success = it.sendBroadcast(element)
+            if (!success) {
+                lock.withLock {
+                    if(isClosedForSend) throw sendException(trySend(element).exceptionOrNull())
+                }
+            }
+        }
     }
 
     override fun trySend(element: E): ChannelResult<Unit> = lock.withLock {
@@ -104,13 +111,13 @@ internal open class BufferedBroadcastChannel<E>(
         return success(Unit)
     }
 
-    override fun registerSelectForSend(select: SelectInstance<*>, element: Any?) = lock.withLock {
+    override fun registerSelectForSend(select: SelectInstance<*>, element: Any?): Unit = lock.withLock {
         error("TODO")
     }
 
     override fun close(cause: Throwable?): Boolean = lock.withLock {
         subscribers.forEach { it.close(cause) }
-        subscribers.clear()
+        subscribers.removeAll { !it.hasElements() }
         return super.close(cause)
     }
 
@@ -237,9 +244,9 @@ internal open class BufferedBroadcastChannel<E>(
     }
 
     override fun toString() =
-        "conflatedElement=$lastConflatedElement," +
-        "broadcast=${super.toString()}," +
-        "subscribers=${subscribers.joinToString(separator = ";", prefix = "<", postfix = ">")}"
+        (if (lastConflatedElement !== NO_ELEMENT) "CONFLATED_ELEMENT=$lastConflatedElement; " else "") +
+        "BROADCAST=<${super.toString()}>; " +
+        "SUBSCRIBERS=${subscribers.joinToString(separator = ";", prefix = "<", postfix = ">")}"
 }
 
 @SharedImmutable

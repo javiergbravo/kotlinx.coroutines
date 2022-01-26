@@ -57,5 +57,5 @@ internal class ChannelViaBroadcast<E>(
     override val onReceiveCatching: SelectClause1<ChannelResult<E>>
         get() = sub.onReceiveCatching
 
-    override fun toString() = broadcast.toString()
+    override fun toString() = "$broadcast; SUB=$sub"
 }

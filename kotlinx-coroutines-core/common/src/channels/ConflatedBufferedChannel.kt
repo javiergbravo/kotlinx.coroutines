@@ -111,6 +111,13 @@ internal open class ConflatedBufferedChannel<E>(
         error("unreachable")
     }
 
+    override suspend fun sendBroadcast(element: E): Boolean {
+        trySend(element)
+            .onSuccess { return true }
+            .onClosed { return false }
+        error("unreachable")
+    }
+
     override fun registerSelectForSend(select: SelectInstance<*>, element: Any?) {
         trySend(element as E).let {
             it.onSuccess {
