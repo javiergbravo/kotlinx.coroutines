@@ -11,6 +11,7 @@ import org.junit.Test
 import kotlin.coroutines.*
 import kotlin.test.*
 
+@Ignore
 class ReusableCancellableContinuationTest : TestBase() {
     @Test
     fun testReusable() = runTest {
