@@ -53,13 +53,13 @@ internal open class BufferedChannel<E>(
 
     private val sendSegment: AtomicRef<ChannelSegment<E>>
     private val receiveSegment: AtomicRef<ChannelSegment<E>>
-    private val bufferEndSegment: AtomicRef<ChannelSegment<E>?>
+    private val bufferEndSegment: AtomicRef<ChannelSegment<E>>
 
     init {
         val s = ChannelSegment<E>(0, null, 3)
         sendSegment = atomic(s)
         receiveSegment = atomic(s)
-        bufferEndSegment = atomic(if (rendezvous || unlimited) null else s)
+        bufferEndSegment = atomic(if (rendezvous || unlimited) (NULL_SEGMENT as ChannelSegment<E>) else s)
     }
 
     // #########################
@@ -1476,7 +1476,7 @@ internal open class BufferedChannel<E>(
     // #######################
 
     private fun findSegmentSend(id: Long, start: ChannelSegment<E>) =
-        sendSegment.findSegmentAndMoveForward(id, start, ::createSegmentt).let {
+        sendSegment.findSegmentAndMoveForward(id, start, ::createSegment).let {
             if (it.isClosed) {
                 completeCloseOrCancel()
                 null
@@ -1505,7 +1505,7 @@ internal open class BufferedChannel<E>(
         }
 
     private fun findSegmentReceive(id: Long, start: ChannelSegment<E>): SegmentOrClosed<ChannelSegment<E>> =
-        receiveSegment.findSegmentAndMoveForward(id, start, ::createSegmentt).also {
+        receiveSegment.findSegmentAndMoveForward(id, start, ::createSegment).also {
             if (it.isClosed) {
                 completeCloseOrCancel()
             } else {
@@ -1515,10 +1515,10 @@ internal open class BufferedChannel<E>(
         }
 
     private fun findSegmentHasElements(id: Long, start: ChannelSegment<E>) =
-        receiveSegment.findSegmentAndMoveForward(id, start, ::createSegmentt)
+        receiveSegment.findSegmentAndMoveForward(id, start, ::createSegment)
 
     private fun findSegmentBuffer(id: Long, start: ChannelSegment<E>) =
-        (bufferEndSegment as AtomicRef<ChannelSegment<E>>).findSegmentAndMoveForward(id, start, ::createSegmentt)
+        bufferEndSegment.findSegmentAndMoveForward(id, start, ::createSegment)
 
     // ##################
     // # FOR DEBUG INFO #
@@ -1619,7 +1619,8 @@ internal class ChannelSegment<E>(id: Long, prev: ChannelSegment<E>?, pointers: I
         onSlotCleaned()
     }
 }
-private fun <E> createSegmentt(id: Long, prev: ChannelSegment<E>?) = ChannelSegment(id, prev, 0)
+private fun <E> createSegment(id: Long, prev: ChannelSegment<E>?) = ChannelSegment(id, prev, 0)
+private val NULL_SEGMENT = createSegment<Any?>(-1, null)
 // Number of cells in each segment
 private val SEGMENT_SIZE = systemProp("kotlinx.coroutines.bufferedChannel.segmentSize", 32)
 

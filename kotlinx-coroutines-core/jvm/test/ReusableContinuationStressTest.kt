@@ -7,7 +7,6 @@ package kotlinx.coroutines
 import kotlinx.coroutines.flow.*
 import org.junit.*
 
-@Ignore
 class ReusableContinuationStressTest : TestBase() {
 
     private val iterations = 1000 * stressTestMultiplierSqrt
